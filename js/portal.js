@@ -133,7 +133,7 @@
       if (n) n.style.display = 'none';
     });
     var target = el(name);
-    if (target) target.style.display = (name === 'portal-dashboard-view') ? 'block' : 'block';
+    if (target) target.style.display = 'block';
   }
 
   function applyAccess(user) {
@@ -405,12 +405,6 @@
   function renderServiceTable(agg) {
     var tbody = el('portal-service-tbody');
     if (!tbody) return;
-
-    var monthTotal = 0;
-    SERVICES.forEach(function (s) { var b = agg.svc[s.key]; if (b) monthTotal += b.month; });
-    if (monthTotal === 0) {
-      SERVICES.forEach(function (s) { var b = agg.svc[s.key]; if (b) { /* noop */ } });
-    }
 
     var list = SERVICES.map(function (s) {
       var b = agg.svc[s.key] || { today: 0, week: 0, month: 0, window: 0, last: null };

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>chatgpts.kr 통합 관리자 대시보드</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/portal.css">
+</head>
+<body class="admin-body" data-service="portal">
+
+<!-- ================= 로딩 ================= -->
+<div class="admin-loading-wrap" id="portal-loading">
+  <div class="admin-spinner"></div>
+  <p>통합 대시보드 보안 인증 확인 중...</p>
+</div>
+
+<!-- ================= 로그인 ================= -->
+<div class="admin-auth-container" id="portal-auth-view" style="display:none;">
+  <div class="admin-auth-card">
+    <div class="admin-auth-icon"><i class="fa-solid fa-shield-halved"></i></div>
+    <h2>통합 관리자 로그인</h2>
+    <p>chatgpts.kr 15개 서비스 통합 대시보드입니다.<br>등록된 관리자 Google 계정으로만 접근할 수 있습니다.</p>
+
+    <button type="button" class="admin-btn-google" id="portal-google-btn">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.4 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.2 5.6c4.2-3.9 6.6-9.6 6.6-17z"/>
+        <path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.3 0 20 0 24s1 7.7 2.6 10.8l7.9-6.2z"/>
+        <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.6 2.2-8.7 2.2-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/>
+      </svg>
+      Google 계정으로 관리자 로그인
+    </button>
+
+    <div id="portal-auth-msg" class="admin-msg" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<!-- ================= 권한 없음 ================= -->
+<div class="admin-auth-container" id="portal-denied-view" style="display:none;">
+  <div class="admin-auth-card">
+    <div class="admin-auth-icon" style="background:#fee2e2;color:#dc2626;"><i class="fa-solid fa-lock"></i></div>
+    <h2>접근 권한이 없습니다</h2>
+    <p>현재 로그인된 계정(<strong id="denied-user-email"></strong>)은 통합 관리자 권한이 없습니다.<br>
+      이 페이지는 등록된 관리자 계정 전용입니다.</p>
+    <button type="button" class="admin-btn-submit js-portal-logout" style="background:#475569;">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> 다른 계정으로 로그인 (로그아웃)
+    </button>
+  </div>
+</div>
+
+<!-- ================= 대시보드 ================= -->
+<div id="portal-dashboard-view" style="display:none;">
+
+  <header class="admin-header">
+    <div class="admin-header-inner">
+      <div class="admin-brand">
+        <span class="admin-logo-badge">🌐</span>
+        <div class="admin-title-wrap">
+          <h1>chatgpts.kr 통합 대시보드 <span class="admin-title-tag">ADMIN</span></h1>
+          <span class="portal-brand-sub">전체 서비스 조회 트래픽 한눈에</span>
+        </div>
+      </div>
+
+      <div class="admin-header-actions">
+        <span class="admin-user-pill">
+          <i class="fa-solid fa-crown"></i>
+          <span id="portal-current-email">—</span>
+        </span>
+        <button class="admin-btn-outline" id="portal-refresh-btn"><i class="fa-solid fa-rotate"></i> 새로고침</button>
+        <button class="admin-btn-outline js-portal-logout" style="color:#b91c1c;border-color:#fca5a5;">
+          <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-content">
+
+    <div id="portal-fatal"></div>
+
+    <!-- 전체 요약 -->
+    <div class="admin-stat-grid">
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>총 누적 조회</span>
+          <span class="admin-stat-icon" style="background:#e0f2fe;color:#0284c7;"><i class="fa-solid fa-eye"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-total-pv">0회</div>
+        <div class="admin-stat-sub">전체 서비스 · 전체 기간</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>오늘 조회</span>
+          <span class="admin-stat-icon" style="background:#dcfce7;color:#16a34a;"><i class="fa-solid fa-calendar-day"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-today-pv">0회</div>
+        <div class="admin-stat-sub">어제 대비 <span id="delta-today"></span></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>최근 7일</span>
+          <span class="admin-stat-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fa-solid fa-calendar-week"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-week-pv">0회</div>
+        <div class="admin-stat-sub">전주 대비 <span id="delta-week"></span></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>최근 30일</span>
+          <span class="admin-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fa-solid fa-calendar-days"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-month-pv">0회</div>
+        <div class="admin-stat-sub">전월 대비 <span id="delta-month"></span></div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>전체 가입자</span>
+          <span class="admin-stat-icon" style="background:#e0e7ff;color:#4f46e5;"><i class="fa-solid fa-users"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-profiles">—</div>
+        <div class="admin-stat-sub">공통 프로필 기준</div>
+      </div>
+      <div class="admin-stat-card">
+        <div class="admin-stat-head">
+          <span>오늘 신규 가입</span>
+          <span class="admin-stat-icon" style="background:#ccfbf1;color:#0d9488;"><i class="fa-solid fa-user-plus"></i></span>
+        </div>
+        <div class="admin-stat-num" id="stat-profiles-today">—</div>
+        <div class="admin-stat-sub">KST 오늘 기준</div>
+      </div>
+    </div>
+
+    <!-- 전체 추이 -->
+    <div class="admin-panel">
+      <div class="admin-panel-head">
+        <h3 class="admin-panel-title"><i class="fa-solid fa-chart-column" style="color:#0284c7;"></i> 전체 조회 추이</h3>
+        <div class="admin-filter-pills" id="portal-trend-range">
+          <button class="admin-pill-btn" data-range="14">14일</button>
+          <button class="admin-pill-btn active" data-range="30">30일</button>
+          <button class="admin-pill-btn" data-range="90">90일</button>
+        </div>
+      </div>
+      <div class="portal-bars" id="portal-trend"></div>
+      <div class="admin-filter-summary" style="margin-top:14px;">
+        <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i>
+        <span id="portal-trend-summary">—</span>
+      </div>
+    </div>
+
+    <!-- 서비스별 현황 -->
+    <div class="admin-panel">
+      <div class="admin-panel-head">
+        <h3 class="admin-panel-title"><i class="fa-solid fa-table-list" style="color:#2563eb;"></i> 서비스별 조회 현황</h3>
+        <span class="admin-panel-note">최근 30일 기준 점유율 · 전주 대비 증감</span>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>서비스</th><th>오늘</th><th>최근 7일</th><th>최근 30일</th><th>누적</th><th>최근 방문</th>
+            </tr>
+          </thead>
+          <tbody id="portal-service-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;">데이터를 불러오는 중...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-grid-2">
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3 class="admin-panel-title"><i class="fa-solid fa-ranking-star" style="color:#eab308;"></i> 서비스 점유율 (최근 30일)</h3>
+        </div>
+        <div class="admin-page-rank-list" id="portal-service-share"></div>
+      </div>
+      <div class="admin-panel">
+        <div class="admin-panel-head">
+          <h3 class="admin-panel-title"><i class="fa-solid fa-clock" style="color:#dc2626;"></i> 시간대 분포 (전체 · 00~23시 KST)</h3>
+        </div>
+        <div class="admin-hourly-chart" id="portal-hourly"></div>
+      </div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="admin-panel-head">
+        <h3 class="admin-panel-title"><i class="fa-solid fa-trophy" style="color:#eab308;"></i> 화면 TOP (전체 서비스 통합)</h3>
+        <span class="admin-panel-note">최근 120일 조회 기준</span>
+      </div>
+      <div class="admin-feed" id="portal-top-pages"></div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="admin-panel-head">
+        <h3 class="admin-panel-title"><i class="fa-solid fa-bolt" style="color:#0ea5e9;"></i> 실시간 최근 방문 로그</h3>
+      </div>
+      <div class="admin-feed" id="portal-recent"></div>
+    </div>
+
+    <div class="admin-panel">
+      <div class="admin-panel-head">
+        <h3 class="admin-panel-title"><i class="fa-solid fa-database" style="color:#10b981;"></i> 시스템 &amp; 데이터 소스</h3>
+      </div>
+      <div id="portal-system-note"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-admin-client.js"></script>
+<script src="js/services.js"></script>
+<script src="js/portal.js"></script>
+</body>
+</html>
